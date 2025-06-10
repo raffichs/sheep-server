@@ -41,6 +41,8 @@ app.use(
   })
 );
 
+app.listen(port, '0.0.0.0', () => console.log(`Server connected on port ${port}`));
+
 app.get("/test", (req, res) => {
   res.json("test ok");
 });
@@ -261,5 +263,3 @@ app.delete("/remove", async (req, res) => {
     res.status(500).json({ message: "Failed to delete photo", error });
   }
 });
-
-app.listen(port, '0.0.0.0', () => console.log(`Server connected on port ${port}`));
