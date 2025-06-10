@@ -109,7 +109,7 @@ app.post("/upload-by-link", async (req, res) => {
   try {
     const result = await cloudinary.uploader.upload(link, {
       public_id: "sheep" + Date.now(),
-      folder: "uploads",
+      folder: "sheep",
     });
     res.json(result.secure_url);
   } catch (error) {
