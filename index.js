@@ -25,7 +25,7 @@ const upload = multer({ storage: storage });
 
 require("dotenv").config();
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 5000;
 
 const bcryptSalt = bcrypt.genSaltSync(10);
 const jwtSecret = "ahdajshddasd";
@@ -262,5 +262,4 @@ app.delete("/remove", async (req, res) => {
   }
 });
 
-app.listen(port, () => console.log(`Server connected on port ${port}`));
-
+app.listen(port, '0.0.0.0', () => console.log(`Server connected on port ${port}`));
