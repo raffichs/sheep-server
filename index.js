@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const { default: mongoose } = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const UserModel = require("./models/User");
@@ -40,8 +39,6 @@ app.use(
     optionsSuccessStatus: 200,
   })
 );
-
-mongoose.connect(process.env.MONGO_URL);
 
 app.get("/test", (req, res) => {
   res.json("test ok");
