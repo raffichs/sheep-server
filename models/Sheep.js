@@ -1,29 +1,7 @@
-// const mongoose = require("mongoose");
-// const { Schema } = mongoose;
-
-// const sheepSchema = new Schema(
-//   {
-//     name: String,
-//     price: Number,
-//     type: String,
-//     age: Number,
-//     height: Number,
-//     weight: Number,
-//     color: String,
-//     desc: String,
-//     category: String,
-//     status: String,
-//     photos: [String],
-//   },
-//   { timestamps: true }
-// );
-
-// const SheepModel = mongoose.model("Sheep", sheepSchema);
-
 const { Sequelize } = require("sequelize");
 const db = require("../config/database.js");
 
-const Sheep = db.define("sheep", {
+const SheepModel = db.define("sheep", {
   name: {
     type: Sequelize.STRING,
   },
@@ -68,4 +46,4 @@ const Sheep = db.define("sheep", {
 
 db.sync().then(() => console.log("sheep synced"));
 
-module.exports = Sheep;
+module.exports = SheepModel;

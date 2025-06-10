@@ -13,7 +13,7 @@ const { Sequelize } = require("sequelize");
 // import db from "../config/database.js";
 const db = require("../config/database.js");
 
-const User = db.define("user", {
+const UserModel = db.define("user", {
   name: {
     type: Sequelize.STRING,
   },
@@ -28,4 +28,4 @@ const User = db.define("user", {
 
 db.sync().then(() => console.log("user synced"));
 
-module.exports = User;
+module.exports = UserModel;
