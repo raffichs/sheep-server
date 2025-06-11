@@ -24,7 +24,6 @@ steps:
         "--region",
         "us-central1",
         "--allow-unauthenticated",
-        "--set-env-vars", "PORT=8080",
       ]
 
 # Log hanya akan disimpan di Google Cloud Logging
