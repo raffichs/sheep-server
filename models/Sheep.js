@@ -1,7 +1,7 @@
 const { Sequelize } = require("sequelize");
 const db = require("../config/database.js");
 
-const SheepModel = db.define("sheep", {
+const Sheep = db.define("sheep", {
   name: {
     type: Sequelize.STRING,
     allowNull: false,
