@@ -1,0 +1,30 @@
+# Ignore node modules
+node_modules/
+
+# Ignore logs
+*.log
+
+# Ignore environment files
+.env
+
+# Ignore Git
+.git/
+.gitignore
+
+# Ignore frontend build (if copied here)
+dist/
+build/
+sheep-client/
+
+# Ignore Docker cache
+.dockerignore
+.docker/
+
+# Ignore other large or local files
+*.zip
+*.tar.gz
+*.sqlite
+*.db
+coverage/
+.vscode/
+.idea/

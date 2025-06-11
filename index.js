@@ -1,31 +1,29 @@
 const express = require("express");
 const cors = require("cors");
-const { default: mongoose } = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const UserModel = require("./models/User");
-const imageDownloader = require("image-downloader");
 const cookieParser = require("cookie-parser");
 const multer = require("multer");
-const fs = require("fs");
-const cloudinary = require("../server/cloudinaryConfig.js");
+const cloudinary = require("./cloudinaryConfig");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
-const SheepModel = require("./models/Sheep");
 const { extractPublicId } = require("cloudinary-build-url");
 
+const UserModel = require("./models/User"); // Sequelize model
+const SheepModel = require("./models/Sheep"); // Sequelize model
+
+require("dotenv").config();
+const app = express();
+
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
+  cloudinary,
   params: {
     folder: "sheep",
-    format: async (req, file) => "png",
+    format: async () => "png",
     public_id: (req, file) => file.filename,
   },
 });
 
-const upload = multer({ storage: storage });
-
-require("dotenv").config();
-const app = express();
+const upload = multer({ storage });
 
 const bcryptSalt = bcrypt.genSaltSync(10);
 const jwtSecret = "ahdajshddasd";
@@ -34,19 +32,18 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    // origin: "https://peternakningsalatiga.vercel.app",
-    origin: "http://localhost:5173",
+    origin: "https://h-01-6969.et.r.appspot.com/",
     credentials: true,
     optionsSuccessStatus: 200,
   })
 );
 
-mongoose.connect(process.env.MONGO_URL);
-
+// Test route
 app.get("/test", (req, res) => {
   res.json("test ok");
 });
 
+// Register
 app.post("/register", async (req, res) => {
   const { name, username, password } = req.body;
   try {
@@ -61,14 +58,15 @@ app.post("/register", async (req, res) => {
   }
 });
 
+// Login
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
-  const user = await UserModel.findOne({ username });
+  const user = await UserModel.findOne({ where: { username } });
   if (user) {
     const passOk = bcrypt.compareSync(password, user.password);
     if (passOk) {
       jwt.sign(
-        { username: user.username, id: user._id },
+        { username: user.username, id: user.id },
         jwtSecret,
         { expiresIn: "1h" },
         (err, token) => {
@@ -83,20 +81,19 @@ app.post("/login", async (req, res) => {
         }
       );
     } else {
-      res.status(422).json("pass not ok");
+      res.status(422).json("Incorrect password");
     }
   } else {
-    res.status(500).json("not found");
+    res.status(404).json("User not found");
   }
 });
 
+// Check admin
 app.get("/admin", (req, res) => {
   const { token } = req.cookies;
   if (token) {
     jwt.verify(token, jwtSecret, {}, (err, admin) => {
-      if (err) {
-        return res.status(403).json({ message: "Invalid token" });
-      }
+      if (err) return res.status(403).json({ message: "Invalid token" });
       res.json(admin);
     });
   } else {
@@ -104,6 +101,7 @@ app.get("/admin", (req, res) => {
   }
 });
 
+// Upload by link (cloudinary)
 app.post("/upload-by-link", async (req, res) => {
   const { link } = req.body;
   try {
@@ -113,157 +111,94 @@ app.post("/upload-by-link", async (req, res) => {
     });
     res.json(result.secure_url);
   } catch (error) {
-    console.error("Full error details:", error);
     res.status(500).json({ error: "Failed to upload image" });
   }
 });
 
+// Upload multiple images
 app.post("/upload", upload.array("photos", 10), (req, res) => {
   const uploadedFiles = req.files.map((file) => file.path);
   res.json(uploadedFiles);
 });
 
+// Create card
 app.post("/cards", async (req, res) => {
-  const {
-    name,
-    price,
-    type,
-    age,
-    height,
-    weight,
-    color,
-    desc,
-    category,
-    status,
-    addedPhotos,
-  } = req.body;
-  const cardDoc = await SheepModel.create({
-    name,
-    price,
-    type,
-    age,
-    height,
-    weight,
-    color,
-    desc,
-    category,
-    status,
-    photos: addedPhotos,
-  });
-  res.json(cardDoc);
+  const data = req.body;
+  try {
+    const card = await SheepModel.create({ ...data, photos: data.addedPhotos });
+    res.json(card);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to create card" });
+  }
 });
 
-app.get("/cards", async (req, res) => { // DONE SEQUELIZE
+// Get cards
+app.get("/cards", async (req, res) => {
   try {
-    const dataCards = await SheepModel.findAll({
-      order: [["createdAt", "DESC"]],
-    });
-    const plainCards = dataCards.map((card) => card.get({ plain: true }));
-    const unsoldCards = plainCards.filter((card) => card.status !== "sold");
-    const soldCards = plainCards.filter((card) => card.status === "sold");
-    const sortedCards = [...unsoldCards, ...soldCards];
-    res.json(sortedCards);
+    const cards = await SheepModel.findAll({ order: [["createdAt", "DESC"]] });
+    const plain = cards.map((c) => c.get({ plain: true }));
+    const sorted = [...plain.filter((c) => c.status !== "sold"), ...plain.filter((c) => c.status === "sold")];
+    res.json(sorted);
   } catch (error) {
-    console.error("Full error details:", error);
     res.status(500).json({ error: "Failed to fetch cards" });
   }
 });
 
+// Get card by ID
 app.get("/cards/:id", async (req, res) => {
   try {
-    const card = await SheepModel.findById(req.params.id);
-    if (!card) {
-      return res.status(404).json({ error: "Card not found" });
-    }
+    const card = await SheepModel.findByPk(req.params.id);
+    if (!card) return res.status(404).json({ error: "Card not found" });
     res.json(card);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch card" });
   }
 });
 
+// Edit card
 app.put("/edit/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const {
-      name,
-      price,
-      type,
-      age,
-      height,
-      weight,
-      color,
-      desc,
-      category,
-      status,
-      photos,
-    } = req.body;
+    const card = await SheepModel.findByPk(req.params.id);
+    if (!card) return res.status(404).json({ message: "Card not found" });
 
-    const card = await SheepModel.findById(id);
-    if (!card) {
-      return res.status(404).json({ message: "Card not found" });
-    }
-
-    card.set({
-      name,
-      price,
-      type,
-      age,
-      height,
-      weight,
-      color,
-      desc,
-      category,
-      status,
-      photos,
-    });
-
+    Object.assign(card, req.body);
     await card.save();
     res.json("ok");
   } catch (error) {
-    console.error("Error updating card:", error);
     res.status(500).json({ message: "Error updating card" });
   }
 });
 
+// Delete card
 app.delete("/delete/:id", async (req, res) => {
-  const { id } = req.params;
   try {
-    // Find the card to get the Cloudinary public IDs
-    const card = await SheepModel.findById(id);
-    if (!card) {
-      return res.status(404).json({ message: "Card not found" });
+    const card = await SheepModel.findByPk(req.params.id);
+    if (!card) return res.status(404).json({ message: "Card not found" });
+
+    if (card.photos?.length) {
+      await Promise.all(
+        card.photos.map((url) => cloudinary.uploader.destroy(extractPublicId(url)))
+      );
     }
 
-    // Delete the card from the database
-    await SheepModel.findByIdAndDelete(id);
-
-    // Delete the images from Cloudinary
-    if (card.photos && card.photos.length > 0) {
-      const deletePromises = card.photos.map((photoUrl) => {
-        const publicId = extractPublicId(photoUrl);
-        return cloudinary.uploader.destroy(publicId);
-      });
-      await Promise.all(deletePromises);
-    }
-
+    await SheepModel.destroy({ where: { id: req.params.id } });
     res.json({ message: "Card deleted successfully" });
   } catch (error) {
-    console.error("Full error details:", error);
-    res.status(500).json({ message: "Failed to delete card", error });
+    res.status(500).json({ message: "Failed to delete card" });
   }
 });
 
+// Remove single photo
 app.delete("/remove", async (req, res) => {
   const { filename } = req.body;
   try {
     const result = await cloudinary.uploader.destroy(extractPublicId(filename));
-    res.json({ message: "Photo deleted successfully", result });
+    res.json({ message: "Photo deleted", result });
   } catch (error) {
-    console.error("Error deleting photo:", error);
-    res.status(500).json({ message: "Failed to delete photo", error });
+    res.status(500).json({ message: "Failed to delete photo" });
   }
 });
 
-app.listen(3001, () => {
+app.listen(8080, () => {
   console.log("Server is running...");
 });
