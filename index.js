@@ -199,6 +199,8 @@ app.delete("/remove", async (req, res) => {
   }
 });
 
-app.listen(8080, () => {
-  console.log("Server is running...");
+const PORT = process.env.PORT || 8080; // Use the environment variable, or default to 8080
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}...`); // Log the actual port
 });
