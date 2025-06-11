@@ -32,7 +32,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "https://h-01-6969.et.r.appspot.com/",
+    origin: "https://h-01-6969.et.r.appspot.com",
     credentials: true,
     optionsSuccessStatus: 200,
   })
